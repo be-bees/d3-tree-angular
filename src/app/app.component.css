@@ -1,0 +1,142 @@
+html,
+body,
+.container {
+  height: 100%;
+  width: 100%;
+}
+my-app {
+  height: 100%;
+  width: 100%;
+  display: inline-block;
+}
+#tree-container {
+  position: absolute;
+  left: 0px;
+  height: 100%;
+  width: 100%;
+}
+
+.svgContainer {
+  display: block;
+  margin: auto;
+}
+
+.node {
+  cursor: pointer;
+}
+
+.node-rect {
+}
+
+.node-rect-closed {
+  stroke-width: 2px;
+  stroke: rgb(0, 0, 0);
+}
+
+.link {
+  fill: none;
+  stroke: lightsteelblue;
+  stroke-width: 2px;
+}
+
+.linkselected {
+  fill: none;
+  stroke: tomato;
+  stroke-width: 2px;
+}
+
+.arrow {
+  fill: lightsteelblue;
+  stroke-width: 1px;
+}
+
+.arrowselected {
+  fill: tomato;
+  stroke-width: 2px;
+}
+
+.link text {
+  font: 7px sans-serif;
+  fill: #cc0000;
+}
+
+.wordwrap {
+  white-space: pre-wrap; /* CSS3 */
+  white-space: -moz-pre-wrap; /* Firefox */
+  white-space: -pre-wrap; /* Opera <7 */
+  white-space: -o-pre-wrap; /* Opera 7 */
+  word-wrap: break-word; /* IE */
+}
+
+.node-text {
+  font: 7px sans-serif;
+  color: red;
+}
+
+.tooltip-text-container {
+  height: 100%;
+  width: 100%;
+}
+
+.tooltip-text {
+  visibility: hidden;
+  font: 7px sans-serif;
+  color: white;
+  display: block;
+  padding: 5px;
+}
+
+.tooltip-box {
+  background: rgba(0, 0, 0, 0.7);
+  visibility: hidden;
+  position: absolute;
+  border-style: solid;
+  border-width: 1px;
+  border-color: black;
+  border-top-right-radius: 0.5em;
+}
+
+p {
+  display: inline;
+}
+
+.textcolored {
+  color: orange;
+}
+
+a.exchangeName {
+  color: orange;
+}
+.node-text {
+  /* Style for the entire node text container */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  height: 200px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+tr {
+  border-bottom: 1px solid #ccc; /* Add a border between rows */
+}
+
+td {
+  padding: 5px;
+}
+
+.key {
+  font-weight: bold;
+}
+
+/* Add a visual link/connection after the table */
+table::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 1px;
+  background-color: #ccc; /* Color of the link */
+}
