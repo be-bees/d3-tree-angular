@@ -23,8 +23,9 @@
 
 .link {
   fill: none;
-  stroke: lightsteelblue;
-  stroke-width: 2px;
+  stroke: rgb(154, 154, 154);
+  stroke-width: 1px;
+  stroke-dasharray: 4;
 }
 
 .linkselected {
@@ -58,12 +59,12 @@
 
 .node-text {
   font: 7px sans-serif;
-  color: red;
+  color: $card_title_color;
   height: 100%;
   overflow-y: auto !important;
   scrollbar-color: #888888 rgba(237, 237, 237, 0.824) !important;
   scrollbar-width: thin;
-  background: yellow;
+  background: $card_bg;
 }
 .node-text::-webkit-scrollbar {
   width: 6px !important;

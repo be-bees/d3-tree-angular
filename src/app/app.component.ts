@@ -1,11 +1,7 @@
 import { Component, OnInit, AfterViewInit } from '@angular/core';
-import * as shape from 'd3-shape';
-import { hierarchy, tree } from 'd3-hierarchy';
 import * as d3 from 'd3';
 import { treeData } from './data';
-import { linkHorizontal } from 'd3-shape';
 import * as _ from 'lodash';
-// import { flatdata } from './flat-data';
 declare var $;
 @Component({
   selector: 'my-app',
@@ -62,6 +58,10 @@ export class AppComponent implements OnInit, AfterViewInit {
   temp;
   rectW = 60;
   rectH = 30;
+  nodeWidth = 150;
+  nodeHeight = 75;
+  horizontalSeparationBetweenNodes = 16;
+  verticalSeparationBetweenNodes = 128;
   ngOnInit() {
     window['d3'] = d3;
     console.log('d3', d3);
@@ -79,7 +79,11 @@ export class AppComponent implements OnInit, AfterViewInit {
 
     // console.log(tempData);
 
-    this.d3DotTree = d3.tree().size([this.height, this.width]);
+    // this.d3DotTree = d3.tree().size([this.height, this.width]);
+    this.d3DotTree = d3.tree().nodeSize([this.nodeWidth, this.nodeHeight])
+    .separation(function(a, b) {
+        return a.parent == b.parent ? 1 : 1.25;
+    });
     this.root = treeData.tree;
     if (Array.isArray(this.root))
       this.root = new Object({
@@ -125,17 +129,18 @@ export class AppComponent implements OnInit, AfterViewInit {
       .attr('width', this.svgWidth)
       .attr('height', this.svgHeight)
       .attr('viewBox', '0 0 600 350')
+      .call(this.Transzoom)
       .append('g')
       .attr('class', 'svgContainer')
-      .attr('transform', 'translate(0,' + this.margin.top + ')');
-    this.baseSvg.call(this.zoom);
-    d3.select('.node').call(this.zoom);
-    // d3
-    //   .zoom()
+
+      // .attr('transform', 'translate(0,' + this.margin.top + ')');
+      // d3.select('#tree-container').call(this.zoom);
+    // d3.select('.node').call(this.zoom);
+    // d3.zoom()
     //   .scaleExtent([0.5, 1.5]) // Limit the zoom scale
-    //   .on('zoom', () => {
+    //   .on('zoom', (d) => {
     //     let scale = 1,
-    //       translation = [d3.event.transform.x, d3.event.transform.y],
+    //       translation = [d['event'].transform.x, d['event'].transform.y],
     //       tbound = -this.temp.height * scale,
     //       bbound = this.temp.height * scale,
     //       lbound = (-this.temp.width + this.temp.margin.right) * scale,
@@ -150,8 +155,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     //       'transform',
     //       'translate(' + translation + ')'
     //     );
-    //   })
-    // ();
+    //   });
     // console.log({ baseSvg: this.baseSvg });
     // Mouse wheel is desactivated, else after a first drag of the tree, wheel event drags the tree (instead of scrolling the window)
     // this.getMouseWheelEvent();
@@ -181,7 +185,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.defs = this.baseSvg.append('defs');
     this.initArrowDef();
     this.initDropShadow();
-    d3.select('#tree-container').call(this.zoom);
+    // d3.select('#tree-container').call(this.zoom);
 
     this.update(this.d3DotHIerarchy);
   }
@@ -234,7 +238,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       .style('display', (d) => (d.depth == 0 ? 'none' : 'block'))
       .attr('transform', (d) => {
         console.log(d);
-        return `translate(${d.x + 10},${d.y})`;
+        return `translate(${d.x},${d.y - 180})`;
       })
       .on('click', (d) => {
         this.click(d);
@@ -258,6 +262,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       .append('foreignObject')
       .attr('x', this.rectNode.textMargin)
       .attr('y', this.rectNode.textMargin)
+      .style('border', '1px solid #878787')
       .attr('width', () => {
         return this.rectNode.width - this.rectNode.textMargin * 2 < 0
           ? 0
@@ -313,7 +318,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       .transition()
       .duration(this.duration)
       .attr('transform', (d) => {
-        return 'translate(' + (d.x + 10) + ',' + d.y + ')';
+        return `translate(${d.x},${d.y - 180})`;
       });
     nodeUpdate.select('rect').attr('class', (d) => {
       return d._children ? 'node-rect-closed' : 'node-rect';
@@ -336,7 +341,8 @@ export class AppComponent implements OnInit, AfterViewInit {
     // 2) ******************* Update the links *******************
     let link = this.linkGroup.selectAll('path.link').data(links, (d) => {
       return d.id;
-    });
+    })
+    d3.link(d3.curveBumpY)
 
     function linkMarkerStart(direction, isSelected) {
       if (direction == 'SYNC') {
@@ -359,12 +365,51 @@ export class AppComponent implements OnInit, AfterViewInit {
       // });
       this.raise();
     };
+    function draw_curve(Ax, Ay, Bx, By, M) {
 
+      // side is either 1 or -1 depending on which side you want the curve to be on.
+      // Find midpoint J
+      var Jx = Ax + (Bx - Ax) / 2
+      var Jy = Ay + (By - Ay) / 2
+    
+      // We need a and b to find theta, and we need to know the sign of each to make sure that the orientation is correct.
+      var a = Bx - Ax
+      var asign = (a < 0 ? -1 : 1)
+      var b = By - Ay
+      var bsign = (b < 0 ? -1 : 1)
+      var theta = Math.atan(b / a)
+    
+      // Find the point that's perpendicular to J on side
+      var costheta = asign * Math.cos(theta)
+      var sintheta = asign * Math.sin(theta)
+    
+      // Find c and d
+      var c = M * sintheta
+      var d = M * costheta
+    
+      // Use c and d to find Kx and Ky
+      var Kx = Jx - c
+      var Ky = Jy + d
+    
+      return "M" + Ax + "," + Ay +
+        "Q" + Kx + "," + Ky +
+        " " + Bx + "," + By
+    }
+    
+    function Pathlink(a,b,c,e) {
+      // return "M" + a + "," + b
+      //     + "C" + (a + c) / 2 + "," + b
+      //     + " " + (a + c) / 2 + "," + e
+      //     + " " + c + "," + e;
+      return "M" + a + "," + b
+    + "S" + (a + c) / 2 + "," + b
+    + " " + c + "," + e;
+    }
     // Enter any new links at the parent's previous position.
     // Enter any new links at the parent's previous position.
     let linkEnter = link
       .enter()
-      .insert('path', 'g')
+      .insert('svg:path')
       .attr('class', (d) => {
         return 'link level-' + d.parent.depth;
       })
@@ -373,26 +418,22 @@ export class AppComponent implements OnInit, AfterViewInit {
         return 'linkID' + d.id;
       })
       .attr('d', (d) => {
-        return this.curvedLink({
-          source: { x: d.parent.x, y: d.parent.y }, // Use the parent's position
-          target: { x: d.x, y: d.y },
-        });
-      });
-    // .attr('marker-end', 'url(#end-arrow)')
+        console.log('link',d)
+        return Pathlink((d.parent.x + 70), (d.parent.y - 60), (d.x + 70), (d.y - 180));
+      })
+    .attr('marker-end', 'url(#end-arrow)')
     // .attr('marker-start', (d) => {
     //   return linkMarkerStart(d.data.link.direction, false);
     // });
     // console.log({ rectNode: this.rectNode });
     // Update
+    var M = 50;
     let linkUpdate = linkEnter
       .merge(link)
       .transition()
       .duration(this.duration)
       .attr('d', (d) => {
-        return this.curvedLink({
-          source: { x: d.parent.x, y: d.parent.y }, // Update to use current x and y
-          target: { x: d.x, y: d.y },
-        });
+        return Pathlink((d.parent.x + 70), (d.parent.y - 60), (d.x + 70), (d.y - 180));
       });
 
     // Transition links to their new position.
@@ -400,20 +441,13 @@ export class AppComponent implements OnInit, AfterViewInit {
       .transition()
       .duration(this.duration)
       .attr('d', (d) => {
-        return this.curvedLink({
-          source: { x: d.parent.x, y: d.parent.y }, // Update to use current x and y
-          target: { x: d.x, y: d.y },
-        });
+        return Pathlink((d.parent.x + 70), (d.parent.y - 60), (d.x + 70), (d.y - 180));
       });
     // Transition exiting nodes to the parent's new position.
     link
       .exit()
       .transition()
-      .duration(this.duration)
-      .attr('d', function (d) {
-        var o = { x: source.x, y: source.y };
-      })
-      .remove();
+      .duration(this.duration).remove();
 
     // Stash the old positions for transition.
     nodes.forEach((d) => {
@@ -430,10 +464,10 @@ export class AppComponent implements OnInit, AfterViewInit {
     return numRows >= 5 ? (numRows / 2) * rowHeight : numRows * rowHeight;
   }
   // Zoom functionnality is desactivated (user can use browser Ctrl + mouse wheel shortcut)
-  zoomAndDrag() {
-    //let scale = d3.event.scale,
+  zoomAndDrag(d) {
+    //let scale = d3['event'].scale,
     let scale = 1,
-      translation = d3.event.translate,
+      translation = d['event'].translate,
       tbound = -this.height * scale,
       bbound = this.height * scale,
       lbound = (-this.width + this.margin.right) * scale,
@@ -653,8 +687,9 @@ export class AppComponent implements OnInit, AfterViewInit {
     .scaleExtent([0.1, 10]) // Limit the zoom scale
     .on('zoom', (event) => {
       console.log(event);
+      if($(event.sourceEvent.target).closest('.node').hasClass('node')) return;
       // let scale = 1,
-      //   translation = [d3.event.transform.x, d3.event.transform.y],
+      //   translation = [d3['event'].transform.x, d3['event'].transform.y],
       //   tbound = -this.temp.height * scale,
       //   bbound = this.temp.height * scale,
       //   lbound = (-this.temp.width + this.temp.margin.right) * scale,
@@ -666,9 +701,17 @@ export class AppComponent implements OnInit, AfterViewInit {
       //   Math.max(Math.min(translation[1], bbound), tbound),
       // ];
       // this.baseSvg.attr('transform', 'translate(' + translation + ')');
-      const transform = d3.event.transform;
-      this.baseSvg.attr('transform', transform);
-    }); // Define a curved link generator
+      const transform = event.transform;
+      this.baseSvg.attr('transform', `translate(${transform.x},${transform.y})`);
+    }); 
+
+    Transzoom = d3.zoom()
+    .on('zoom', (event) => {
+      this.baseSvg.attr('transform', event.transform);
+    })
+    .scaleExtent([0.1, 40]);
+
+    // Define a curved link generator
   // Define a curved link generator
   curvedLink = d3
     .linkVertical() // Use linkVertical for top-to-bottom links
@@ -681,7 +724,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   //     'zoom',
   //     _.debounce(() => {
   //       // Apply the zoom transform to the 'svgGroup' container
-  //       this.svgGroup.attr('transform', d3.event.transform);
+  //       this.svgGroup.attr('transform', d3['event'].transform);
   //     }, 50)
   //   );
 }
